@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+:root {
+  font-family: 'Noto Sans SC', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #e0dcd0;
+  background-color: #1a1a2e;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #1a1a2e;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #4a4a5a #252540;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #252540;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #4a4a5a;
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #6a6a7a;
+}
+
+@layer components {
+  .btn-copper {
+    @apply px-4 py-2 rounded-lg bg-copper text-base-dark font-medium
+    transition-all duration-200 ease-out
+    hover:bg-copper-light hover:shadow-[0_0_15px_rgba(201,169,110,0.4)]
+    active:scale-95 active:shadow-none
+    disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-copper disabled:hover:shadow-none;
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 rounded-lg border border-iron text-iron-light font-medium
+    transition-all duration-200 ease-out
+    hover:border-copper hover:text-copper hover:shadow-[0_0_10px_rgba(201,169,110,0.2)]
+    active:scale-95;
+  }
+
+  .card-mech {
+    @apply bg-base-light rounded-xl border border-iron/30
+    transition-all duration-300 ease-out
+    hover:border-copper/50 hover:shadow-[0_0_20px_rgba(201,169,110,0.15)];
+  }
+
+  .panel-dark {
+    @apply bg-base-dark/80 backdrop-blur-sm border border-iron/20 rounded-xl;
+  }
+
+  .glow-copper {
+    box-shadow: 0 0 10px rgba(201, 169, 110, 0.3), 0 0 30px rgba(201, 169, 110, 0.1);
+  }
+
+  .glow-emerald {
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.4), 0 0 30px rgba(46, 204, 113, 0.15);
+  }
+
+  .glow-amber {
+    box-shadow: 0 0 10px rgba(230, 126, 34, 0.4), 0 0 30px rgba(230, 126, 34, 0.15);
+  }
+
+  .glow-sapphire {
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.4), 0 0 30px rgba(52, 152, 219, 0.15);
+  }
+
+  .text-glow-copper {
+    text-shadow: 0 0 10px rgba(201, 169, 110, 0.5);
+  }
+
+  .grid-cell {
+    @apply border border-iron/20 bg-base-dark/50 rounded-sm
+    transition-all duration-150 ease-out
+    hover:bg-base-light/50 hover:border-iron/40;
+  }
+}
