@@ -174,19 +174,22 @@ export default function Editor() {
       setImportError('无效的分享码，请检查后重试')
       return
     }
-    setLevelName(level.name)
-    setLevelType(level.type)
-    setGridSize(level.gridWidth, level.gridHeight)
-    setHintCount(level.hintCount)
-    setHints(level.hints)
-    for (const comp of level.components) {
-      addComponent(comp)
-    }
-    for (const cond of level.winConditions) {
-      addWinCondition(cond)
-    }
-    setImportModalOpen(false)
-  }, [importCode, setLevelName, setLevelType, setGridSize, setHintCount, setHints, addComponent, addWinCondition])
+    clearEditor()
+    setTimeout(() => {
+      setLevelName(level.name)
+      setLevelType(level.type)
+      setGridSize(level.gridWidth, level.gridHeight)
+      setHintCount(level.hintCount)
+      setHints(level.hints.length > 0 ? level.hints : [''])
+      for (const comp of level.components) {
+        addComponent({ ...comp, id: comp.id || `${Date.now()}_${Math.random().toString(36).slice(2, 9)}` })
+      }
+      for (const cond of level.winConditions) {
+        addWinCondition(cond)
+      }
+      setImportModalOpen(false)
+    }, 0)
+  }, [importCode, clearEditor, setLevelName, setLevelType, setGridSize, setHintCount, setHints, addComponent, addWinCondition])
 
   const handleCopyCode = useCallback(() => {
     navigator.clipboard.writeText(shareCode)

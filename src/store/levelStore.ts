@@ -26,6 +26,13 @@ export const useLevelStore = create<LevelState>()(
         return state.levels.find((l) => l.id === id) || state.customLevels.find((l) => l.id === id)
       },
 
+      getLevelByCode: (code: string) => {
+        const state = get()
+        return state.customLevels.find((l) => l.id === `custom-${code}`)
+          || state.customLevels.find((l) => l.id === `custom_${code}`)
+          || state.customLevels.find((l) => l.id === code)
+      },
+
       isUnlocked: (id: string) => {
         return get().unlockedIds.includes(id)
       },
