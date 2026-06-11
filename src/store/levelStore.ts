@@ -11,6 +11,7 @@ interface LevelState {
   isUnlocked: (id: string) => boolean
   unlockLevel: (id: string) => void
   addCustomLevel: (level: Level) => void
+  removeCustomLevel: (id: string) => void
   getCustomLevelByShareCode: (code: string) => Level | undefined
 }
 
@@ -34,10 +35,12 @@ export const useLevelStore = create<LevelState>()(
       },
 
       isUnlocked: (id: string) => {
+        if (id.startsWith('custom_')) return true
         return get().unlockedIds.includes(id)
       },
 
       unlockLevel: (id: string) => {
+        if (id.startsWith('custom_')) return
         set((state) => {
           if (state.unlockedIds.includes(id)) return state
           return { unlockedIds: [...state.unlockedIds, id] }
@@ -45,8 +48,22 @@ export const useLevelStore = create<LevelState>()(
       },
 
       addCustomLevel: (level: Level) => {
+        set((state) => {
+          const existingIdx = state.customLevels.findIndex((l) => l.id === level.id)
+          if (existingIdx >= 0) {
+            const updated = [...state.customLevels]
+            updated[existingIdx] = level
+            return { customLevels: updated }
+          }
+          return {
+            customLevels: [...state.customLevels, level],
+          }
+        })
+      },
+
+      removeCustomLevel: (id: string) => {
         set((state) => ({
-          customLevels: [...state.customLevels, level],
+          customLevels: state.customLevels.filter((l) => l.id !== id),
         }))
       },
 

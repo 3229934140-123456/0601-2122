@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Undo2, Redo2, RotateCcw, Lightbulb, X,
-  Trophy, Clock, Footprints, Star, Home, ChevronRight
+  Trophy, Clock, Footprints, Star, Home, ChevronRight, Flame, Wrench
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLevelStore } from '@/store/levelStore'
@@ -55,8 +55,8 @@ export default function GamePlay() {
   const { id, code } = useParams<{ id?: string; code?: string }>()
   const navigate = useNavigate()
 
-  const { getLevelById, isUnlocked, unlockLevel, addCustomLevel } = useLevelStore()
-  const { completeLevel, getRecord } = useProgressStore()
+  const { getLevelById, isUnlocked, unlockLevel, addCustomLevel, levels } = useLevelStore()
+  const { completeLevel, getRecord, progress } = useProgressStore()
   const { getUsedCount, useHint: useHintFn, resetLevelHints, getRevealedCount } = useHintStore()
 
   const [level, setLevel] = useState<Level | null>(null)
@@ -151,13 +151,16 @@ export default function GamePlay() {
     if (won) {
       setIsCompleted(true)
       setShowWinModal(true)
-      const rating = completeLevel(level.id, newSteps, elapsedSeconds * 1000, level.minSteps)
+      const isDefault = !!level.isDefault
+      const rating = completeLevel(level.id, newSteps, elapsedSeconds * 1000, level.minSteps || 1, isDefault)
       setWinRating(rating)
 
-      const levelIndex = useLevelStore.getState().levels.findIndex((l) => l.id === level.id)
-      if (levelIndex >= 0 && levelIndex + 1 < useLevelStore.getState().levels.length) {
-        const nextLevel = useLevelStore.getState().levels[levelIndex + 1]
-        unlockLevel(nextLevel.id)
+      if (isDefault) {
+        const levelIndex = useLevelStore.getState().levels.findIndex((l) => l.id === level.id)
+        if (levelIndex >= 0 && levelIndex + 1 < useLevelStore.getState().levels.length) {
+          const nextLevel = useLevelStore.getState().levels[levelIndex + 1]
+          unlockLevel(nextLevel.id)
+        }
       }
     }
   }, [level, steps, isCompleted, pushToHistory, completeLevel, unlockLevel, elapsedSeconds])
@@ -635,6 +638,20 @@ export default function GamePlay() {
                 </div>
               </div>
 
+              {level.isDefault && progress.streakDays > 0 && (
+                <div className="mb-4 p-2.5 rounded-lg bg-amber/10 border border-amber/25 text-amber text-xs font-medium flex items-center justify-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5 fill-amber" />
+                  已连续解谜 <span className="font-bold">{progress.streakDays}</span> 天
+                </div>
+              )}
+
+              {!level.isDefault && (
+                <div className="mb-4 p-2.5 rounded-lg bg-copper/10 border border-copper/25 text-copper text-xs font-medium flex items-center justify-center gap-1.5">
+                  <Wrench className="w-3.5 h-3.5" />
+                  自定义关卡 · 记录最佳成绩，不影响默认进度
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <button
                   onClick={handleReset}
@@ -658,13 +675,29 @@ export default function GamePlay() {
                 </button>
               </div>
 
-              {!level.isDefault && (
+              {level.isDefault && !isPlaytestMode && (() => {
+                const levelIndex = levels.findIndex((l) => l.id === level.id)
+                const hasNext = levelIndex >= 0 && levelIndex + 1 < levels.length
+                if (!hasNext) return null
+                const next = levels[levelIndex + 1]
+                return (
+                  <button
+                    onClick={() => navigate(`/play/${next.id}`)}
+                    className="w-full mt-3 btn-primary flex items-center justify-center gap-2 text-sm"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                    下一关 · {next.name}
+                  </button>
+                )
+              })()}
+
+              {!level.isDefault && !isPlaytestMode && (
                 <button
                   onClick={() => navigate('/editor')}
                   className="w-full mt-3 btn-ghost flex items-center justify-center gap-2 text-sm"
                 >
-                  <ChevronRight className="w-4 h-4" />
-                  前往编辑器
+                  <Wrench className="w-4 h-4" />
+                  打开编辑器
                 </button>
               )}
             </motion.div>

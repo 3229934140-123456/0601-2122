@@ -9,7 +9,7 @@ interface ProgressState {
   getRecord: (levelId: string) => LevelRecord | undefined
   isFavorite: (levelId: string) => boolean
   toggleFavorite: (levelId: string) => void
-  completeLevel: (levelId: string, steps: number, time: number, minSteps: number) => Rating
+  completeLevel: (levelId: string, steps: number, time: number, minSteps: number, isDefaultLevel: boolean) => Rating
   getRating: (steps: number, minSteps: number) => Rating
   updateStreak: () => void
 }
@@ -43,7 +43,7 @@ export const useProgressStore = create<ProgressState>()(
         return 'C'
       },
 
-      completeLevel: (levelId: string, steps: number, time: number, minSteps: number): Rating => {
+      completeLevel: (levelId: string, steps: number, time: number, minSteps: number, isDefaultLevel: boolean): Rating => {
         const rating = get().getRating(steps, minSteps)
         set((state) => {
           const existing = state.records[levelId]
@@ -69,11 +69,13 @@ export const useProgressStore = create<ProgressState>()(
             records: { ...state.records, [levelId]: newRecord },
             progress: {
               ...state.progress,
-              totalSolved: state.progress.totalSolved + (isNewlyCompleted ? 1 : 0),
+              totalSolved: isDefaultLevel ? state.progress.totalSolved + (isNewlyCompleted ? 1 : 0) : state.progress.totalSolved,
             },
           }
         })
-        get().updateStreak()
+        if (isDefaultLevel) {
+          get().updateStreak()
+        }
         return rating
       },
 
