@@ -149,9 +149,17 @@ function checkCondition(
 ): boolean {
   switch (condition.type) {
     case 'light_reach': {
+      const segments = traceLightBeam(components, gridWidth, gridHeight)
+      const exitId = condition.params.exitId as string | undefined
+      if (exitId) {
+        const exit = components.find((c) => c.id === exitId)
+        if (!exit) return false
+        return segments.some(
+          (seg) => seg.to.row === exit.position.row && seg.to.col === exit.position.col
+        )
+      }
       const targetRow = condition.params.targetRow as number
       const targetCol = condition.params.targetCol as number
-      const segments = traceLightBeam(components, gridWidth, gridHeight)
       return segments.some(
         (seg) => seg.to.row === targetRow && seg.to.col === targetCol
       )

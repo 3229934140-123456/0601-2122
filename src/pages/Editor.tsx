@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, Play, Share2, Import, Trash2, Plus, Minus,
@@ -66,7 +66,9 @@ function ComponentIcon({ type, className }: { type: ComponentType; className?: s
 
 export default function Editor() {
   const navigate = useNavigate()
+  const { code } = useParams<{ code?: string }>()
   const addCustomLevel = useLevelStore((s) => s.addCustomLevel)
+  const importedRef = useRef(false)
 
   const {
     levelName, levelType, gridWidth, gridHeight,
@@ -87,6 +89,30 @@ export default function Editor() {
   const [copied, setCopied] = useState(false)
 
   const selectedComponent = components.find((c) => c.id === selectedComponentId) ?? null
+
+  useEffect(() => {
+    if (code && !importedRef.current) {
+      importedRef.current = true
+      const level = decodeLevel(code)
+      if (level) {
+        clearEditor()
+        setTimeout(() => {
+          setLevelName(level.name)
+          setLevelType(level.type)
+          setGridSize(level.gridWidth, level.gridHeight)
+          setHintCount(level.hintCount)
+          setHints(level.hints.length > 0 ? level.hints : [''])
+          for (const comp of level.components) {
+            addComponent({ ...comp, id: comp.id || `${Date.now()}_${Math.random().toString(36).slice(2, 9)}` })
+          }
+          for (const cond of level.winConditions) {
+            addWinCondition(cond)
+          }
+          navigate('/editor', { replace: true })
+        }, 0)
+      }
+    }
+  }, [code, clearEditor, setLevelName, setLevelType, setGridSize, setHintCount, setHints, addComponent, addWinCondition, navigate])
 
   const handleCellClick = useCallback(
     (row: number, col: number) => {
@@ -123,8 +149,9 @@ export default function Editor() {
   }, [selectedComponentId, removeComponent])
 
   const handleTestPlay = useCallback(() => {
+    const timestamp = Date.now()
     const tempLevel = {
-      id: `custom_${Date.now()}`,
+      id: `custom_playtest_${timestamp}`,
       name: levelName || '未命名关卡',
       type: levelType,
       difficulty: 1,
@@ -133,11 +160,15 @@ export default function Editor() {
       gridHeight,
       hintCount,
       hints,
-      components: [...components],
-      winConditions: [...winConditions],
+      components: JSON.parse(JSON.stringify(components)),
+      winConditions: JSON.parse(JSON.stringify(winConditions)),
       isDefault: false,
+      isPlaytest: true,
+      _playtestTimestamp: timestamp,
     }
     addCustomLevel(tempLevel)
+    useEditorStore.getState().setPlaytesting(true)
+    sessionStorage.setItem('mechpuzzle-playtest-id', tempLevel.id)
     navigate(`/play/${tempLevel.id}`)
   }, [levelName, levelType, gridWidth, gridHeight, hintCount, hints, components, winConditions, addCustomLevel, navigate])
 
@@ -582,28 +613,144 @@ export default function Editor() {
                 <Plus className="w-4 h-4" />
               </button>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {winConditions.map((cond, i) => (
-                <div key={i} className="flex items-center gap-1.5 bg-base-dark/60 rounded px-2 py-1.5">
-                  <select
-                    value={cond.type}
-                    onChange={(e) => {
-                      const newConditions = [...winConditions]
-                      newConditions[i] = { ...newConditions[i], type: e.target.value as WinConditionType }
-                      useEditorStore.setState({ winConditions: newConditions })
-                    }}
-                    className="flex-1 bg-base-dark border border-iron/30 rounded px-1.5 py-0.5 text-xs text-copper focus:outline-none focus:border-copper"
-                  >
-                    {WIN_CONDITION_TYPES.map((wct) => (
-                      <option key={wct.type} value={wct.type}>{wct.label}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => removeWinCondition(i)}
-                    className="text-ruby/60 hover:text-ruby transition-colors"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
+                <div key={i} className="bg-base-dark/60 rounded p-2 space-y-2">
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={cond.type}
+                      onChange={(e) => {
+                        const newConditions = [...winConditions]
+                        newConditions[i] = { ...newConditions[i], type: e.target.value as WinConditionType, params: {} }
+                        useEditorStore.setState({ winConditions: newConditions })
+                      }}
+                      className="flex-1 bg-base-dark border border-iron/30 rounded px-1.5 py-0.5 text-xs text-copper focus:outline-none focus:border-copper"
+                    >
+                      {WIN_CONDITION_TYPES.map((wct) => (
+                        <option key={wct.type} value={wct.type}>{wct.label}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => removeWinCondition(i)}
+                      className="text-ruby/60 hover:text-ruby transition-colors"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  {cond.type === 'light_reach' && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-iron-light/60">选择出口组件</label>
+                      <select
+                        value={(cond.params.exitId as string) ?? ''}
+                        onChange={(e) => {
+                          const newConditions = [...winConditions]
+                          newConditions[i] = { ...newConditions[i], params: { ...newConditions[i].params, exitId: e.target.value } }
+                          useEditorStore.setState({ winConditions: newConditions })
+                        }}
+                        className="w-full bg-base-dark border border-iron/30 rounded px-1.5 py-0.5 text-xs text-copper focus:outline-none focus:border-copper"
+                      >
+                        <option value="">-- 选择出口 --</option>
+                        {components.filter((c) => c.type === 'exit').map((c) => (
+                          <option key={c.id} value={c.id}>出口 ({c.position.row},{c.position.col})</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {cond.type === 'block_on_target' && (
+                    <div className="space-y-1.5">
+                      <div>
+                        <label className="text-xs text-iron-light/60">选择方块</label>
+                        <select
+                          value={(cond.params.blockId as string) ?? ''}
+                          onChange={(e) => {
+                            const newConditions = [...winConditions]
+                            newConditions[i] = { ...newConditions[i], params: { ...newConditions[i].params, blockId: e.target.value } }
+                            useEditorStore.setState({ winConditions: newConditions })
+                          }}
+                          className="w-full bg-base-dark border border-iron/30 rounded px-1.5 py-0.5 text-xs text-copper focus:outline-none focus:border-copper"
+                        >
+                          <option value="">-- 选择方块 --</option>
+                          {components.filter((c) => c.type === 'block').map((c) => (
+                            <option key={c.id} value={c.id}>方块 ({c.position.row},{c.position.col})</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-iron-light/60">选择目标</label>
+                        <select
+                          value={(cond.params.targetId as string) ?? ''}
+                          onChange={(e) => {
+                            const newConditions = [...winConditions]
+                            newConditions[i] = { ...newConditions[i], params: { ...newConditions[i].params, targetId: e.target.value } }
+                            useEditorStore.setState({ winConditions: newConditions })
+                          }}
+                          className="w-full bg-base-dark border border-iron/30 rounded px-1.5 py-0.5 text-xs text-copper focus:outline-none focus:border-copper"
+                        >
+                          <option value="">-- 选择目标 --</option>
+                          {components.filter((c) => c.type === 'target').map((c) => (
+                            <option key={c.id} value={c.id}>目标 ({c.position.row},{c.position.col})</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                  {cond.type === 'circuit_complete' && (
+                    <div className="space-y-1.5">
+                      <div>
+                        <label className="text-xs text-iron-light/60">选择电源节点</label>
+                        <select
+                          value={(cond.params.sourceId as string) ?? ''}
+                          onChange={(e) => {
+                            const newConditions = [...winConditions]
+                            newConditions[i] = { ...newConditions[i], params: { ...newConditions[i].params, sourceId: e.target.value } }
+                            useEditorStore.setState({ winConditions: newConditions })
+                          }}
+                          className="w-full bg-base-dark border border-iron/30 rounded px-1.5 py-0.5 text-xs text-copper focus:outline-none focus:border-copper"
+                        >
+                          <option value="">-- 选择电源 --</option>
+                          {components.filter((c) => c.type === 'circuit').map((c) => (
+                            <option key={c.id} value={c.id}>电路 ({c.position.row},{c.position.col})</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-iron-light/60">选择目标节点</label>
+                        <select
+                          value={(cond.params.targetId as string) ?? ''}
+                          onChange={(e) => {
+                            const newConditions = [...winConditions]
+                            newConditions[i] = { ...newConditions[i], params: { ...newConditions[i].params, targetId: e.target.value } }
+                            useEditorStore.setState({ winConditions: newConditions })
+                          }}
+                          className="w-full bg-base-dark border border-iron/30 rounded px-1.5 py-0.5 text-xs text-copper focus:outline-none focus:border-copper"
+                        >
+                          <option value="">-- 选择目标 --</option>
+                          {components.filter((c) => c.type === 'circuit').map((c) => (
+                            <option key={c.id} value={c.id}>电路 ({c.position.row},{c.position.col})</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                  {cond.type === 'color_match' && (
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-iron-light/60">选择颜色门</label>
+                      <select
+                        value={(cond.params.gateId as string) ?? ''}
+                        onChange={(e) => {
+                          const newConditions = [...winConditions]
+                          newConditions[i] = { ...newConditions[i], params: { ...newConditions[i].params, gateId: e.target.value } }
+                          useEditorStore.setState({ winConditions: newConditions })
+                        }}
+                        className="w-full bg-base-dark border border-iron/30 rounded px-1.5 py-0.5 text-xs text-copper focus:outline-none focus:border-copper"
+                      >
+                        <option value="">-- 选择颜色门 --</option>
+                        {components.filter((c) => c.type === 'color_gate').map((c) => (
+                          <option key={c.id} value={c.id}>颜色门 ({c.position.row},{c.position.col})</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               ))}
               {winConditions.length === 0 && (

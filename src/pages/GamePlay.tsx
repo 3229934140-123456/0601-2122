@@ -68,12 +68,14 @@ export default function GamePlay() {
   const [revealedHints, setRevealedHints] = useState(0)
   const [showWinModal, setShowWinModal] = useState(false)
   const [winRating, setWinRating] = useState<'S' | 'A' | 'B' | 'C' | null>(null)
+  const [isPlaytestMode, setIsPlaytestMode] = useState(false)
 
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
 
   useEffect(() => {
     let loadedLevel: Level | null = null
+    let playtest = false
 
     if (code) {
       loadedLevel = decodeLevel(code)
@@ -82,7 +84,14 @@ export default function GamePlay() {
         loadedLevel.isDefault = false
       }
     } else if (id) {
-      if (id.startsWith('custom_')) {
+      if (id.startsWith('custom_playtest_')) {
+        playtest = true
+        const customLevels = useLevelStore.getState().customLevels
+        loadedLevel = customLevels.find((l) => l.id === id) ?? null
+        if (loadedLevel) {
+          loadedLevel.isDefault = false
+        }
+      } else if (id.startsWith('custom_')) {
         const customLevels = useLevelStore.getState().customLevels
         loadedLevel = customLevels.find((l) => l.id === id) ?? null
         if (loadedLevel) {
@@ -98,6 +107,7 @@ export default function GamePlay() {
       return
     }
 
+    setIsPlaytestMode(playtest)
     setLevel(loadedLevel)
     setComponents(deepCloneComponents(loadedLevel.components))
     setSteps(0)
@@ -340,11 +350,17 @@ export default function GamePlay() {
     <div className="min-h-screen bg-base font-body text-[#e0dcd0] flex flex-col">
       <header className="flex items-center justify-between px-4 py-3 border-b border-iron/20 bg-base-dark/60 backdrop-blur-sm">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => {
+            if (isPlaytestMode) {
+              navigate('/editor')
+            } else {
+              navigate('/')
+            }
+          }}
           className="btn-ghost flex items-center gap-1.5 text-sm py-1.5 px-3"
         >
           <ArrowLeft className="w-4 h-4" />
-          返回
+          {isPlaytestMode ? '返回编辑器' : '返回'}
         </button>
         <div className="flex flex-col items-center">
           <h1 className="font-display text-lg text-copper text-glow-copper">{level.name}</h1>
@@ -357,6 +373,11 @@ export default function GamePlay() {
               <Clock className="w-3 h-3" />
               {formatTime(elapsedSeconds)}
             </span>
+            {isPlaytestMode && (
+              <span className="px-2 py-0.5 rounded bg-copper/20 text-copper text-[10px] border border-copper/30">
+                测试游玩
+              </span>
+            )}
           </div>
         </div>
         <button
@@ -388,18 +409,19 @@ export default function GamePlay() {
                 <div
                   key={i}
                   className={cn(
-                    'relative flex items-center justify-center rounded-sm cursor-pointer transition-colors',
+                    'relative flex items-center justify-center rounded-sm cursor-pointer transition-colors z-10',
                     'border border-iron/20 bg-base-dark/30 hover:bg-base-light/30'
                   )}
                   style={{ width: cellSize, height: cellSize }}
                   onClick={() => handleCellClick(row, col)}
                 >
                   {comp && (
-                    <GameComponent
-                      component={comp}
-                      cellSize={cellSize}
-                      onClick={() => handleCellClick(row, col)}
-                    />
+                    <div className="absolute inset-0 pointer-events-none">
+                      <GameComponent
+                        component={comp}
+                        cellSize={cellSize}
+                      />
+                    </div>
                   )}
                 </div>
               )
@@ -622,11 +644,17 @@ export default function GamePlay() {
                   再玩一次
                 </button>
                 <button
-                  onClick={() => navigate('/')}
+                  onClick={() => {
+                    if (isPlaytestMode) {
+                      navigate('/editor')
+                    } else {
+                      navigate('/')
+                    }
+                  }}
                   className="flex-1 btn-copper flex items-center justify-center gap-2"
                 >
-                  <Home className="w-4 h-4" />
-                  返回大厅
+                  {isPlaytestMode ? <ArrowLeft className="w-4 h-4" /> : <Home className="w-4 h-4" />}
+                  {isPlaytestMode ? '返回编辑器' : '返回大厅'}
                 </button>
               </div>
 
@@ -650,11 +678,9 @@ export default function GamePlay() {
 function GameComponent({
   component,
   cellSize,
-  onClick,
 }: {
   component: LevelComponent
   cellSize: number
-  onClick: () => void
 }) {
   const { type, properties } = component
   const size = cellSize * 0.7
@@ -664,8 +690,7 @@ function GameComponent({
     const angle = p.direction
     return (
       <div
-        className="absolute inset-0 flex items-center justify-center cursor-pointer"
-        onClick={onClick}
+        className="absolute inset-0 flex items-center justify-center"
       >
         <div
           className="bg-amber rounded-sm"
@@ -686,8 +711,8 @@ function GameComponent({
     return (
       <div
         className={cn(
-          'absolute rounded-md flex items-center justify-center cursor-pointer',
-          p.isFixed ? 'bg-iron' : 'bg-sapphire hover:bg-sapphire/80'
+          'absolute rounded-md flex items-center justify-center',
+          p.isFixed ? 'bg-iron' : 'bg-sapphire'
         )}
         style={{
           width: size,
@@ -695,7 +720,6 @@ function GameComponent({
           boxShadow: p.isFixed ? 'none' : '0 2px 8px rgba(52, 152, 219, 0.3)',
           transition: 'background-color 0.15s',
         }}
-        onClick={onClick}
       >
         {!p.isFixed && (
           <div className="w-1.5 h-1.5 rounded-full bg-white/30" />
@@ -710,8 +734,7 @@ function GameComponent({
     const glow = p.isPowered || p.isSource ? '0 0 10px rgba(46, 204, 113, 0.6)' : 'none'
     return (
       <div
-        className="absolute inset-0 flex items-center justify-center cursor-pointer"
-        onClick={onClick}
+        className="absolute inset-0 flex items-center justify-center"
       >
         <svg width={size} height={size} viewBox="0 0 100 100">
           {p.connections[0] && (
@@ -749,9 +772,8 @@ function GameComponent({
     const dotSize = size / (p.colorCount + 1)
     return (
       <div
-        className="absolute inset-0 flex items-center justify-center gap-1 cursor-pointer flex-wrap"
+        className="absolute inset-0 flex items-center justify-center gap-1 flex-wrap"
         style={{ padding: '4px' }}
-        onClick={onClick}
       >
         {p.currentOrder.map((colorIdx, i) => (
           <div

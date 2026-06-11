@@ -19,7 +19,7 @@ export const defaultLevels: Level[] = [
       { id: 'm1', type: 'mirror', position: { row: 2, col: 4 }, properties: { direction: 0, isFixed: false } },
       { id: 'exit1', type: 'exit', position: { row: 5, col: 4 }, properties: { isOpen: false } },
     ],
-    winConditions: [{ type: 'light_reach', params: { targetRow: 5, targetCol: 4 } }],
+    winConditions: [{ type: 'light_reach', params: { exitId: 'exit1' } }],
     isDefault: true,
   },
   {
@@ -42,7 +42,7 @@ export const defaultLevels: Level[] = [
       { id: 'm2', type: 'mirror', position: { row: 5, col: 3 }, properties: { direction: 0, isFixed: false } },
       { id: 'exit1', type: 'exit', position: { row: 5, col: 6 }, properties: { isOpen: false } },
     ],
-    winConditions: [{ type: 'light_reach', params: { targetRow: 5, targetCol: 6 } }],
+    winConditions: [{ type: 'light_reach', params: { exitId: 'exit1' } }],
     isDefault: true,
   },
   {
@@ -70,7 +70,7 @@ export const defaultLevels: Level[] = [
       { id: 'w3', type: 'wall', position: { row: 4, col: 7 }, properties: {} },
       { id: 'w4', type: 'wall', position: { row: 5, col: 7 }, properties: {} },
     ],
-    winConditions: [{ type: 'light_reach', params: { targetRow: 7, targetCol: 7 } }],
+    winConditions: [{ type: 'light_reach', params: { exitId: 'exit1' } }],
     isDefault: true,
   },
   {
@@ -136,8 +136,8 @@ export const defaultLevels: Level[] = [
     ],
     components: [
       { id: 'c1', type: 'circuit', position: { row: 2, col: 0 }, properties: { connections: [false, true, false, false], isSource: true, isTarget: false, isPowered: true, isFixed: true } },
-      { id: 'c2', type: 'circuit', position: { row: 2, col: 2 }, properties: { connections: [true, true, false, false], isSource: false, isTarget: false, isPowered: false, isFixed: false } },
-      { id: 'c3', type: 'circuit', position: { row: 2, col: 4 }, properties: { connections: [false, false, false, true], isSource: false, isTarget: true, isPowered: false, isFixed: true } },
+      { id: 'c2', type: 'circuit', position: { row: 2, col: 1 }, properties: { connections: [true, false, true, false], isSource: false, isTarget: false, isPowered: false, isFixed: false } },
+      { id: 'c3', type: 'circuit', position: { row: 2, col: 2 }, properties: { connections: [false, false, false, true], isSource: false, isTarget: true, isPowered: false, isFixed: true } },
       { id: 'exit1', type: 'exit', position: { row: 4, col: 4 }, properties: { isOpen: false } },
     ],
     winConditions: [{ type: 'circuit_complete', params: { sourceId: 'c1', targetId: 'c3' } }],
@@ -159,9 +159,9 @@ export const defaultLevels: Level[] = [
     ],
     components: [
       { id: 'c1', type: 'circuit', position: { row: 1, col: 0 }, properties: { connections: [false, true, false, false], isSource: true, isTarget: false, isPowered: true, isFixed: true } },
-      { id: 'c2', type: 'circuit', position: { row: 1, col: 2 }, properties: { connections: [false, true, true, false], isSource: false, isTarget: false, isPowered: false, isFixed: false } },
-      { id: 'c3', type: 'circuit', position: { row: 3, col: 2 }, properties: { connections: [true, false, false, true], isSource: false, isTarget: false, isPowered: false, isFixed: false } },
-      { id: 'c4', type: 'circuit', position: { row: 3, col: 4 }, properties: { connections: [false, false, false, true], isSource: false, isTarget: true, isPowered: false, isFixed: true } },
+      { id: 'c2', type: 'circuit', position: { row: 1, col: 1 }, properties: { connections: [false, true, true, false], isSource: false, isTarget: false, isPowered: false, isFixed: false } },
+      { id: 'c3', type: 'circuit', position: { row: 2, col: 1 }, properties: { connections: [true, false, false, true], isSource: false, isTarget: false, isPowered: false, isFixed: false } },
+      { id: 'c4', type: 'circuit', position: { row: 2, col: 2 }, properties: { connections: [false, false, false, true], isSource: false, isTarget: true, isPowered: false, isFixed: true } },
       { id: 'exit1', type: 'exit', position: { row: 5, col: 5 }, properties: { isOpen: false } },
     ],
     winConditions: [{ type: 'circuit_complete', params: { sourceId: 'c1', targetId: 'c4' } }],
